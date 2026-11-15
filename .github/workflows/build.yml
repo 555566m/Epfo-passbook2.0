@@ -1,5 +1,6 @@
 name: Build APK
 on:
+  push:
   workflow_dispatch:
 jobs:
   build:
@@ -11,12 +12,22 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: subosito/flutter-action@v2
         with:
-          gradle-version: '8.7'
-      - run: cd pf-android && gradle assembleDebug --no-daemon
+          channel: stable
+          flutter-version: '3.35.x'
+      - run: bash ci/setup.sh
+        working-directory: epfo_passbook
+      - run: flutter pub get
+        working-directory: epfo_passbook
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        working-directory: epfo_passbook
+      - run: flutter test
+        working-directory: epfo_passbook
+      - run: bash ci/build.sh
+        working-directory: epfo_passbook
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: pf-passbook-apk
-          path: pf-android/app/build/outputs/apk/debug/app-debug.apk
+          name: EPFO-PASSBOOK-apk
+          path: epfo_passbook/build/app/outputs/flutter-apk/app-release.apk
